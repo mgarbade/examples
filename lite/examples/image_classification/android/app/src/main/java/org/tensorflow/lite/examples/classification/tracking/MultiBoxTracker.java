@@ -201,15 +201,15 @@ public class MultiBoxTracker {
     int RectRight = RectLeft + deviceWidth -100;
     int RectBottom = RectTop+ 1000;
     Rect rec = new Rect((int) RectLeft,(int)RectTop,(int)RectRight,(int)RectBottom);
-    canvas.drawRect(rec,paint);
+    //canvas.drawRect(rec,paint);
     Log.v("RECT","draw_single_box done");
 
-    float radius = 5;
+    float radius = 10;
     float x,y;
     paint.setStyle(Paint.Style.FILL);
     for (Recognition pose : poses){
-      x = pose.getLocation().left;
-      y = pose.getLocation().left;
+      x = pose.getLocation().top*3;
+      y = pose.getLocation().left*3;
       canvas.drawCircle(x, y, radius ,paint);
     }
 

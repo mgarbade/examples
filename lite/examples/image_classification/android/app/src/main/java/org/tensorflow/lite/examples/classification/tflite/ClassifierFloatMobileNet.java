@@ -40,6 +40,7 @@ public class ClassifierFloatMobileNet extends Classifier {
   private int num_classes = 17;
   private int output_stride = 16;
 
+
   /**
    * Initializes a {@code ClassifierFloatMobileNet}.
    *
@@ -48,6 +49,8 @@ public class ClassifierFloatMobileNet extends Classifier {
   public ClassifierFloatMobileNet(Activity activity, Device device, int numThreads)
       throws IOException {
     super(activity, device, numThreads);
+
+
     //  labelProbArray = new float[1][getNumLabels()];
     labelProbArray = new float[1] [23] [17] [17];
 
