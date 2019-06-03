@@ -21,6 +21,8 @@ import android.graphics.Bitmap;
 import android.graphics.RectF;
 import android.os.SystemClock;
 import android.os.Trace;
+import android.util.Log;
+
 import java.io.BufferedReader;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -94,11 +96,11 @@ public abstract class Classifier {
    */
   public static Classifier create(Activity activity, Model model, Device device, int numThreads)
       throws IOException {
-    if (model == Model.QUANTIZED) {
-      return new ClassifierQuantizedMobileNet(activity, device, numThreads);
-    } else {
+//    if (model == Model.QUANTIZED) {
+//      return new ClassifierQuantizedMobileNet(activity, device, numThreads);
+//    } else {
       return new ClassifierFloatMobileNet(activity, device, numThreads);
-    }
+//    }
   }
 
   /** An immutable result returned by a Classifier describing what was recognized. */
@@ -107,15 +109,15 @@ public abstract class Classifier {
      * A unique identifier for what has been recognized. Specific to the class, not the instance of
      * the object.
      */
-    private final String id;
+    private  String id;
 
     /** Display name for the recognition. */
-    private final String title;
+    private  String title;
 
     /**
      * A sortable score for how good the recognition is relative to others. Higher should be better.
      */
-    private final Float confidence;
+    private  Float confidence;
 
     /** Optional location within the source image for the location of the recognized object. */
     private RectF location;
@@ -173,7 +175,9 @@ public abstract class Classifier {
 
   /** Initializes a {@code Classifier}. */
   protected Classifier(Activity activity, Device device, int numThreads) throws IOException {
+    Log.v("MG", "Start to load mobilenet");
     tfliteModel = loadModelFile(activity);
+    Log.v("MG", "Done");
     switch (device) {
       case NNAPI:
         tfliteOptions.setUseNNAPI(true);
@@ -187,7 +191,9 @@ public abstract class Classifier {
     }
     tfliteOptions.setNumThreads(numThreads);
     tflite = new Interpreter(tfliteModel, tfliteOptions);
+
     labels = loadLabelList(activity);
+    LOGGER.v("MG", "labels loaded, labels.size() =" + labels.size());
     imgData =
         ByteBuffer.allocateDirect(
             DIM_BATCH_SIZE
@@ -202,6 +208,7 @@ public abstract class Classifier {
   /** Reads label list from Assets. */
   private List<String> loadLabelList(Activity activity) throws IOException {
     List<String> labels = new ArrayList<String>();
+    Log.v("MG", "labels as New ArrayList . labels.size() = " + labels.size());
     BufferedReader reader =
         new BufferedReader(new InputStreamReader(activity.getAssets().open(getLabelPath())));
     String line;
@@ -209,6 +216,7 @@ public abstract class Classifier {
       labels.add(line);
     }
     reader.close();
+    Log.v("MG", "After Line reading: labels.size() = " + labels.size());
     return labels;
   }
 
@@ -254,36 +262,46 @@ public abstract class Classifier {
     // Run the inference call.
     Trace.beginSection("runInference");
     long startTime = SystemClock.uptimeMillis();
-    runInference();
+    ArrayList<Recognition> recognitions = runInference();
     long endTime = SystemClock.uptimeMillis();
     Trace.endSection();
     LOGGER.v("Timecost to run model inference: " + (endTime - startTime));
 
     // Find the best classifications.
-    PriorityQueue<Recognition> pq =
-        new PriorityQueue<Recognition>(
-            3,
-            new Comparator<Recognition>() {
-              @Override
-              public int compare(Recognition lhs, Recognition rhs) {
-                // Intentionally reversed to put high confidence at the head of the queue.
-                return Float.compare(rhs.getConfidence(), lhs.getConfidence());
-              }
-            });
-    for (int i = 0; i < labels.size(); ++i) {
-      pq.add(
-          new Recognition(
-              "" + i,
-              labels.size() > i ? labels.get(i) : "unknown",
-              getNormalizedProbability(i),
-              null));
-    }
-    final ArrayList<Recognition> recognitions = new ArrayList<Recognition>();
-    int recognitionsSize = Math.min(pq.size(), MAX_RESULTS);
-    for (int i = 0; i < recognitionsSize; ++i) {
-      recognitions.add(pq.poll());
-    }
-    Trace.endSection();
+//    PriorityQueue<Recognition> pq =
+//        new PriorityQueue<Recognition>(
+//            3,
+//            new Comparator<Recognition>() {
+//              @Override
+//              public int compare(Recognition lhs, Recognition rhs) {
+//                // Intentionally reversed to put high confidence at the head of the queue.
+//                return Float.compare(rhs.getConfidence(), lhs.getConfidence());
+//              }
+//            });
+//    for (int i = 0; i < labels.size(); ++i) {
+//    //for (int i = 0; i < 17; ++i) {
+//      pq.add(
+//          new Recognition(
+//              "" + i,
+//              labels.size() > i ? labels.get(i) : "unknown",
+//              getNormalizedProbability(i),
+//              null));
+//    }
+
+
+//    RectF trackedPos = null;
+//    Float confidence = new Float(0.9);
+//    RectF location = new RectF(200,400,200,400);
+//    for (int i = 0; i < 17; ++i) {
+//      trackedPos = new RectF(200+i,400+i,200+i,400+i);
+//      recognitions.add(new Recognition("Nose", "NoseTitle", confidence,location ));
+//    }
+//    Log.v("MG", "Added recognitions ArrayList ");
+//    int recognitionsSize = Math.min(pq.size(), MAX_RESULTS);
+//    for (int i = 0; i < recognitionsSize; ++i) {
+//      recognitions.add(pq.poll());
+//    }
+//    Trace.endSection();
     return recognitions;
   }
 
@@ -374,7 +392,7 @@ public abstract class Classifier {
    * <p>This additional method is necessary, because we don't have a common base for different
    * primitive data types.
    */
-  protected abstract void runInference();
+  protected abstract ArrayList<Recognition> runInference();
 
   /**
    * Get the total number of labels.

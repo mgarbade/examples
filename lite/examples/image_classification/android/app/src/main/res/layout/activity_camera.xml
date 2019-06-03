@@ -32,8 +32,15 @@
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:background="@android:color/black"
-            tools:context="org.tensorflow.lite.examples.classification.CameraActivity" />
+            tools:context="org.tensorflow.lite.examples.classification.CameraActivity" >
 
+            <SurfaceView
+                android:layout_alignParentTop="true"
+                android:id="@+id/TransparentView"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"/>
+
+        </FrameLayout>
 
         <android.support.v7.widget.Toolbar
             android:id="@+id/toolbar"

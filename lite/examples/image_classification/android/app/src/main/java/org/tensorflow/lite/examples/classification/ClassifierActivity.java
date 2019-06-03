@@ -23,17 +23,21 @@ import android.graphics.Matrix;
 import android.graphics.Typeface;
 import android.media.ImageReader.OnImageAvailableListener;
 import android.os.SystemClock;
+import android.util.Log;
 import android.util.Size;
 import android.util.TypedValue;
 import android.widget.Toast;
 import java.io.IOException;
 import java.util.List;
+
+import org.tensorflow.lite.examples.classification.customview.OverlayView;
 import org.tensorflow.lite.examples.classification.env.BorderedText;
 import org.tensorflow.lite.examples.classification.env.ImageUtils;
 import org.tensorflow.lite.examples.classification.env.Logger;
 import org.tensorflow.lite.examples.classification.tflite.Classifier;
 import org.tensorflow.lite.examples.classification.tflite.Classifier.Device;
 import org.tensorflow.lite.examples.classification.tflite.Classifier.Model;
+import org.tensorflow.lite.examples.classification.tracking.MultiBoxTracker;
 
 public class ClassifierActivity extends CameraActivity implements OnImageAvailableListener {
   private static final Logger LOGGER = new Logger();
@@ -49,6 +53,8 @@ public class ClassifierActivity extends CameraActivity implements OnImageAvailab
   private Matrix frameToCropTransform;
   private Matrix cropToFrameTransform;
   private BorderedText borderedText;
+  OverlayView trackingOverlay;
+  private MultiBoxTracker tracker;
 
   @Override
   protected int getLayoutId() {
@@ -97,14 +103,29 @@ public class ClassifierActivity extends CameraActivity implements OnImageAvailab
 
     cropToFrameTransform = new Matrix();
     frameToCropTransform.invert(cropToFrameTransform);
+
+    tracker = new MultiBoxTracker(this);
+    trackingOverlay = (OverlayView) findViewById(R.id.tracking_overlay);
+    Log.v("MG:", "tracking Overlay is being created");
+    trackingOverlay.addCallback(
+            new OverlayView.DrawCallback() {
+              @Override
+              public void drawCallback(final Canvas canvas) {
+                tracker.draw_single_box(canvas);
+                //tracker.drawPoses(canvas);
+              }
+            });
+    tracker.setFrameConfiguration(previewWidth, previewHeight, sensorOrientation);
   }
 
   @Override
   protected void processImage() {
+
+
     rgbFrameBitmap.setPixels(getRgbBytes(), 0, previewWidth, 0, 0, previewWidth, previewHeight);
     final Canvas canvas = new Canvas(croppedBitmap);
     canvas.drawBitmap(rgbFrameBitmap, frameToCropTransform, null);
-
+    Log.v("MG:", "ProcessImage is reached");
     runInBackground(
         new Runnable() {
           @Override
@@ -120,7 +141,7 @@ public class ClassifierActivity extends CameraActivity implements OnImageAvailab
                   new Runnable() {
                     @Override
                     public void run() {
-                      showResultsInBottomSheet(results);
+//                      showResultsInBottomSheet(results);
                       showFrameInfo(previewWidth + "x" + previewHeight);
                       showCropInfo(cropCopyBitmap.getWidth() + "x" + cropCopyBitmap.getHeight());
                       showCameraResolution(canvas.getWidth() + "x" + canvas.getHeight());
@@ -128,10 +149,16 @@ public class ClassifierActivity extends CameraActivity implements OnImageAvailab
                       showInference(lastProcessingTimeMs + "ms");
                     }
                   });
+              tracker.setPoses(results);
+              tracker.trackResults(results, (long)lastProcessingTimeMs);
+              //tracker.draw_poses(canvas, results);
+              trackingOverlay.postInvalidate();
             }
             readyForNextImage();
           }
         });
+
+
   }
 
   @Override

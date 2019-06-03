@@ -189,9 +189,11 @@ public class TFLiteObjectDetectionAPIModel implements Classifier {
     Trace.endSection();
 
     // Run the inference call.
+    /////////////////////////////////////////////// MG: INFERENCE ////////////////////////////////////////////
     Trace.beginSection("run");
     tfLite.runForMultipleInputsOutputs(inputArray, outputMap);
     Trace.endSection();
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     // Show the best detections.
     // after scaling them back to the input size.

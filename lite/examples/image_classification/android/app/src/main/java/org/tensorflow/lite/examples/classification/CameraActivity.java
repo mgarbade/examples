@@ -20,6 +20,10 @@ import android.Manifest;
 import android.app.Fragment;
 import android.content.Context;
 import android.content.pm.PackageManager;
+import android.graphics.Canvas;
+import android.graphics.Color;
+import android.graphics.Paint;
+import android.graphics.Rect;
 import android.hardware.Camera;
 import android.hardware.camera2.CameraAccessException;
 import android.hardware.camera2.CameraCharacteristics;
@@ -39,8 +43,11 @@ import android.support.annotation.UiThread;
 import android.support.design.widget.BottomSheetBehavior;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
+import android.util.Log;
 import android.util.Size;
 import android.view.Surface;
+import android.view.SurfaceHolder;
+import android.view.SurfaceView;
 import android.view.View;
 import android.view.ViewTreeObserver;
 import android.view.WindowManager;
@@ -57,12 +64,20 @@ import org.tensorflow.lite.examples.classification.env.Logger;
 import org.tensorflow.lite.examples.classification.tflite.Classifier.Device;
 import org.tensorflow.lite.examples.classification.tflite.Classifier.Model;
 import org.tensorflow.lite.examples.classification.tflite.Classifier.Recognition;
+import android.graphics.PixelFormat;
 
 public abstract class CameraActivity extends AppCompatActivity
     implements OnImageAvailableListener,
         Camera.PreviewCallback,
         View.OnClickListener,
-        AdapterView.OnItemSelectedListener {
+        AdapterView.OnItemSelectedListener,
+        SurfaceHolder.Callback{
+
+  // MG
+  private SurfaceView transparentView;
+  private SurfaceHolder holder, holderTransparent;
+  private float RectLeft, RectTop,RectRight,RectBottom ;
+
   private static final Logger LOGGER = new Logger();
 
   private static final int PERMISSIONS_REQUEST = 1;
@@ -99,9 +114,41 @@ public abstract class CameraActivity extends AppCompatActivity
   private Spinner deviceSpinner;
   private TextView threadsTextView;
 
-  private Model model = Model.QUANTIZED;
+  //private Model model = Model.QUANTIZED;
+  private Model model = Model.FLOAT;
   private Device device = Device.CPU;
   private int numThreads = -1;
+
+  // MG:
+  private int deviceWidth = 480;
+  private int deviceHeight = 640;
+
+  @Override
+  public void surfaceCreated(SurfaceHolder holder) {
+    Log.v("MG","Surface Changed");
+    try{
+      synchronized(holder){
+        Draw();
+        Log.v("MG","Drawing has been called.");
+
+      }
+    }catch(Exception e){
+      Log.i("Exception", e.toString());
+    }
+
+  }
+
+  @Override
+  public void surfaceChanged(SurfaceHolder holder, int format, int width, int height) {
+    Draw();
+    Log.v("MG","Drawing has been called.");
+  }
+
+
+  @Override
+  public void surfaceDestroyed(SurfaceHolder holder) {
+
+  }
 
   @Override
   protected void onCreate(final Bundle savedInstanceState) {
@@ -199,7 +246,31 @@ public abstract class CameraActivity extends AppCompatActivity
     model = Model.valueOf(modelSpinner.getSelectedItem().toString().toUpperCase());
     device = Device.valueOf(deviceSpinner.getSelectedItem().toString());
     numThreads = Integer.parseInt(threadsTextView.getText().toString().trim());
+
+    // MG:
+    transparentView = (SurfaceView)findViewById(R.id.TransparentView);
+    holderTransparent = transparentView.getHolder();
+    holderTransparent.addCallback((SurfaceHolder.Callback) this);
+    holderTransparent.setFormat(PixelFormat.TRANSLUCENT);
+    transparentView.setZOrderMediaOverlay(true);
+
   }
+
+  private void Draw() {
+    Canvas canvas = holderTransparent.lockCanvas(null);
+    Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    paint.setStyle(Paint.Style.STROKE);
+    paint.setColor(Color.GREEN);
+    paint.setStrokeWidth(3);
+    RectLeft = 1;
+    RectTop = 200 ;
+    RectRight = RectLeft + deviceWidth -100;
+    RectBottom = RectTop+ 200;
+    Rect rec=new Rect((int) RectLeft,(int)RectTop,(int)RectRight,(int)RectBottom);
+    canvas.drawRect(rec,paint);
+    holderTransparent.unlockCanvasAndPost(canvas);
+  }
+
 
   protected int[] getRgbBytes() {
     imageConverter.run();

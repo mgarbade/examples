@@ -16,7 +16,10 @@ limitations under the License.
 package org.tensorflow.lite.examples.classification.tflite;
 
 import android.app.Activity;
+import android.graphics.RectF;
+
 import java.io.IOException;
+import java.util.ArrayList;
 
 /** This TensorFlow Lite classifier works with the quantized MobileNet model. */
 public class ClassifierQuantizedMobileNet extends Classifier {
@@ -90,7 +93,10 @@ public class ClassifierQuantizedMobileNet extends Classifier {
   }
 
   @Override
-  protected void runInference() {
+  protected ArrayList<Recognition> runInference() {
+    // MG: This is where the model output should be catched
     tflite.run(imgData, labelProbArray);
+    ArrayList<Recognition> recognitions = new ArrayList<Recognition>();
+    return recognitions;
   }
 }

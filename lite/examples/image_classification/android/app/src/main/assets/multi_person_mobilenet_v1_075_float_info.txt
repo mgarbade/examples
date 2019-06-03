@@ -1,0 +1,3 @@
+Model: multi_person_mobilenet_v1_075_float
+Input: input
+Output: float_heatmaps
