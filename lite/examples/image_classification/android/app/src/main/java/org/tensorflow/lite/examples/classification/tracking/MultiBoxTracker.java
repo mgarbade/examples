@@ -195,23 +195,89 @@ public class MultiBoxTracker {
     paint.setStyle(Paint.Style.STROKE);
     paint.setColor(Color.GREEN);
     paint.setStrokeWidth(3);
-    int RectLeft = 1;
-    int RectTop = 200 ;
-    int deviceWidth = 480;
-    int RectRight = RectLeft + deviceWidth -100;
-    int RectBottom = RectTop+ 1000;
-    Rect rec = new Rect((int) RectLeft,(int)RectTop,(int)RectRight,(int)RectBottom);
-    //canvas.drawRect(rec,paint);
-    Log.v("RECT","draw_single_box done");
+
+    Paint paint_head = new Paint(Paint.ANTI_ALIAS_FLAG);
+    paint_head.setStyle(Paint.Style.STROKE);
+    paint_head.setColor(Color.RED);
+    paint_head.setStrokeWidth(3);
+
+    Rect rec2 = new Rect(10, 10, 1004, 2004);
+    canvas.drawRect(rec2,paint);
 
     float radius = 10;
-    float x,y;
+    float scale = (float) 7.0;
+    float x = 0, y = 0, new_x = 0, new_y = 0;
     paint.setStyle(Paint.Style.FILL);
+    int counter = 0;
     for (Recognition pose : poses){
-      x = pose.getLocation().top*3;
-      y = pose.getLocation().left*3;
-      canvas.drawCircle(x, y, radius ,paint);
+      new_x = pose.getLocation().top * scale;
+      new_y = pose.getLocation().left * scale;
+      if (counter == 0) {
+        canvas.drawCircle(new_x * scale, new_x * scale, radius  * 5 ,paint_head);
+      } else {
+        canvas.drawCircle(new_x, new_x, radius, paint);
+      }
+
+      x = new_x;
+      y = new_y;
+      counter ++;
+      Log.v("POSE","Counter = " + counter +  " new_x: " + new_x + " new_y: " + new_y);
     }
+
+    float shoulder_left_y = poses.get(5).getLocation().top;
+    float shoulder_left_x = poses.get(5).getLocation().left;
+    float shoulder_right_y = poses.get(6).getLocation().top;
+    float shoulder_right_x = poses.get(6).getLocation().left;
+
+    float elbow_left_y = poses.get(7).getLocation().top;
+    float elbow_left_x = poses.get(7).getLocation().left;
+    float elbow_right_y = poses.get(8).getLocation().top;
+    float elbow_right_x = poses.get(8).getLocation().left;
+
+    float wrist_left_y = poses.get(9).getLocation().top;
+    float wrist_left_x = poses.get(9).getLocation().left;
+    float wrist_right_y = poses.get(10).getLocation().top;
+    float wrist_right_x = poses.get(10).getLocation().left;
+
+    float hip_left_y = poses.get(11).getLocation().top;
+    float hip_left_x = poses.get(11).getLocation().left;
+    float hip_right_y = poses.get(12).getLocation().top;
+    float hip_right_x = poses.get(12).getLocation().left;
+
+    float knee_left_y = poses.get(13).getLocation().top;
+    float knee_left_x = poses.get(13).getLocation().left;
+    float knee_right_y = poses.get(14).getLocation().top;
+    float knee_right_x = poses.get(14).getLocation().left;
+
+    float ankle_left_y = poses.get(15).getLocation().top;
+    float ankle_left_x = poses.get(15).getLocation().left;
+    float ankle_right_y = poses.get(16).getLocation().top;
+    float ankle_right_x = poses.get(16).getLocation().left;
+
+
+    // Arms
+    paint.setColor(Color.MAGENTA);
+    canvas.drawLine(shoulder_left_x,shoulder_left_y,elbow_left_x,elbow_left_y,paint);
+    canvas.drawLine(elbow_left_x,elbow_left_y,wrist_left_x,wrist_left_y,paint);
+    paint.setColor(Color.CYAN);
+    canvas.drawLine(shoulder_right_x,shoulder_right_y,elbow_right_x,elbow_right_y,paint);
+    canvas.drawLine(elbow_right_x,elbow_right_y,wrist_right_x,wrist_right_y,paint);
+
+    // Legs
+    paint.setColor(Color.BLUE);
+    canvas.drawLine(hip_left_x,hip_left_y,knee_left_x,knee_left_y,paint);
+    canvas.drawLine(knee_left_x,knee_left_y,ankle_left_x,ankle_left_y,paint);
+    paint.setColor(Color.GREEN);
+    canvas.drawLine(hip_right_x,hip_right_y,knee_right_x,knee_right_y,paint);
+    canvas.drawLine(knee_right_x,knee_right_y,ankle_right_x,ankle_right_y,paint);
+
+    // Body
+    paint.setColor(Color.YELLOW);
+    canvas.drawLine(shoulder_left_x,shoulder_left_y,shoulder_right_x,shoulder_right_y,paint);
+    canvas.drawLine(shoulder_left_x,shoulder_left_y,hip_left_x,hip_left_y,paint);
+    canvas.drawLine(shoulder_right_x,shoulder_right_y,hip_right_x,hip_right_y,paint);
+    canvas.drawLine(hip_left_x,hip_left_y,hip_right_x,hip_right_y,paint);
+
 
   }
 

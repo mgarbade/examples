@@ -44,6 +44,7 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.text.TextUtils;
+import android.util.Log;
 import android.util.Size;
 import android.util.SparseIntArray;
 import android.view.LayoutInflater;
@@ -435,7 +436,7 @@ public class CameraConnectionFragment extends Fragment {
       previewRequestBuilder = cameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);
       previewRequestBuilder.addTarget(surface);
 
-      LOGGER.i("Opening camera preview: " + previewSize.getWidth() + "x" + previewSize.getHeight());
+      Log.v("MG", "Opening camera preview (width x height): " + previewSize.getWidth() + "x" + previewSize.getHeight());
 
       // Create the reader for the preview frames.
       previewReader =

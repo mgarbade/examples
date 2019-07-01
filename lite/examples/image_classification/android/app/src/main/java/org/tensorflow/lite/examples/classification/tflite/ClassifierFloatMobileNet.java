@@ -160,8 +160,8 @@ public class ClassifierFloatMobileNet extends Classifier {
           if (labelProbArray[0][i][j][k] > tmp_max[k]){
             Log.v("POSE", "old max[k] = " + tmp_max[k] + ",\t new max = " + labelProbArray[0][i][j][k] + ", at (k,i,j) = (" + k + "," + i + "," + j + ")" + " pose(x,y) = " + (int) poses_x[k] + "," + (int) poses_y[k]);
             tmp_max[k] = labelProbArray[0][i][j][k];
-            poses_x[k] = i * output_stride;
-            poses_y[k] = j * output_stride;
+            poses_y[k] = i * output_stride;
+            poses_x[k] = j * output_stride;
             //Log.v("POSE", " pose(x,y) = " + (int) poses_x[k] + "," + (int) poses_y[k]);
           }
 
