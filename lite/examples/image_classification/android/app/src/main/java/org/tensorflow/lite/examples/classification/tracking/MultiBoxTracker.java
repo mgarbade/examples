@@ -23,6 +23,8 @@ import android.graphics.Paint;
 import android.graphics.Paint.Cap;
 import android.graphics.Paint.Join;
 import android.graphics.Paint.Style;
+import android.graphics.Point;
+import android.graphics.PointF;
 import android.graphics.Rect;
 import android.graphics.RectF;
 import android.text.TextUtils;
@@ -127,6 +129,7 @@ public class MultiBoxTracker {
 
   public synchronized void draw(final Canvas canvas) {
     final boolean rotated = sensorOrientation % 180 == 90;
+//    final boolean rotated = true;
     final float multiplier =
         Math.min(
             canvas.getHeight() / (float) (rotated ? frameWidth : frameHeight),
@@ -194,65 +197,66 @@ public class MultiBoxTracker {
     Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
     paint.setStyle(Paint.Style.STROKE);
     paint.setColor(Color.GREEN);
-    paint.setStrokeWidth(3);
+    paint.setStrokeWidth(1);
 
     Paint paint_head = new Paint(Paint.ANTI_ALIAS_FLAG);
     paint_head.setStyle(Paint.Style.STROKE);
     paint_head.setColor(Color.RED);
-    paint_head.setStrokeWidth(3);
+    paint_head.setStrokeWidth(1);
 
-    Rect rec2 = new Rect(10, 10, 1004, 2004);
-    canvas.drawRect(rec2,paint);
+//    Rect rec2 = new Rect(10, 10, 1004, 2004);
+//    canvas.drawRect(rec2,paint);
 
     float radius = 10;
-    float scale = (float) 7.0;
-    float x = 0, y = 0, new_x = 0, new_y = 0;
+    float scale = (float) 1.0;
+    float [] mPoints = new float[34];
+    float x = 0, y = 0;
     paint.setStyle(Paint.Style.FILL);
     int counter = 0;
     for (Recognition pose : poses){
-      new_x = pose.getLocation().top * scale;
-      new_y = pose.getLocation().left * scale;
-      if (counter == 0) {
-        canvas.drawCircle(new_x * scale, new_x * scale, radius  * 5 ,paint_head);
-      } else {
-        canvas.drawCircle(new_x, new_x, radius, paint);
-      }
-
-      x = new_x;
-      y = new_y;
+      y = pose.getLocation().top * scale;
+      x = pose.getLocation().left * scale;
+      mPoints[counter * 2] = x;
+      mPoints[counter * 2 + 1] = y;
       counter ++;
-      Log.v("POSE","Counter = " + counter +  " new_x: " + new_x + " new_y: " + new_y);
+      Log.v("POSE","Counter = " + counter +  " x: " + x + " y: " + y);
     }
 
-    float shoulder_left_y = poses.get(5).getLocation().top;
-    float shoulder_left_x = poses.get(5).getLocation().left;
-    float shoulder_right_y = poses.get(6).getLocation().top;
-    float shoulder_right_x = poses.get(6).getLocation().left;
+    getFrameToCanvasMatrix().mapPoints(mPoints);
 
-    float elbow_left_y = poses.get(7).getLocation().top;
-    float elbow_left_x = poses.get(7).getLocation().left;
-    float elbow_right_y = poses.get(8).getLocation().top;
-    float elbow_right_x = poses.get(8).getLocation().left;
+    float shoulder_left_x = mPoints[5 * 2];
+    float shoulder_left_y = mPoints[5 * 2 + 1];
+    float shoulder_right_x = mPoints[6 * 2];
+    float shoulder_right_y = mPoints[6 * 2 + 1];
 
-    float wrist_left_y = poses.get(9).getLocation().top;
-    float wrist_left_x = poses.get(9).getLocation().left;
-    float wrist_right_y = poses.get(10).getLocation().top;
-    float wrist_right_x = poses.get(10).getLocation().left;
+    float elbow_left_x = mPoints[7 * 2];
+    float elbow_left_y = mPoints[7 * 2 + 1];
+    float elbow_right_x = mPoints[8 * 2];
+    float elbow_right_y = mPoints[8 * 2 + 1];
 
-    float hip_left_y = poses.get(11).getLocation().top;
-    float hip_left_x = poses.get(11).getLocation().left;
-    float hip_right_y = poses.get(12).getLocation().top;
-    float hip_right_x = poses.get(12).getLocation().left;
+    float wrist_left_x = mPoints[9 * 2];
+    float wrist_left_y = mPoints[9 * 2 + 1];
+    float wrist_right_x = mPoints[10 * 2];
+    float wrist_right_y = mPoints[10 * 2 + 1];
 
-    float knee_left_y = poses.get(13).getLocation().top;
-    float knee_left_x = poses.get(13).getLocation().left;
-    float knee_right_y = poses.get(14).getLocation().top;
-    float knee_right_x = poses.get(14).getLocation().left;
+    float hip_left_x = mPoints[11 * 2];
+    float hip_left_y = mPoints[11 * 2 + 1];
+    float hip_right_x = mPoints[12 * 2];
+    float hip_right_y = mPoints[12 * 2 + 1];
 
-    float ankle_left_y = poses.get(15).getLocation().top;
-    float ankle_left_x = poses.get(15).getLocation().left;
-    float ankle_right_y = poses.get(16).getLocation().top;
-    float ankle_right_x = poses.get(16).getLocation().left;
+    float knee_left_x = mPoints[13 * 2];
+    float knee_left_y = mPoints[13 * 2 + 1];
+    float knee_right_x = mPoints[14 * 2];
+    float knee_right_y = mPoints[14 * 2 + 1];
+
+    float ankle_left_x = mPoints[15 * 2];
+    float ankle_left_y = mPoints[15 * 2 + 1];
+    float ankle_right_x = mPoints[16 * 2];
+    float ankle_right_y = mPoints[16 * 2 + 1];
+
+
+
+
 
 
     // Arms
