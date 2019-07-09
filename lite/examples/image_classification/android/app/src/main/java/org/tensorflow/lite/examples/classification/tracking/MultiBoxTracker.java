@@ -129,7 +129,7 @@ public class MultiBoxTracker {
 
   public synchronized void draw(final Canvas canvas) {
     final boolean rotated = sensorOrientation % 180 == 90;
-//    final boolean rotated = true;
+//    final boolean rotated = false;
     final float multiplier =
         Math.min(
             canvas.getHeight() / (float) (rotated ? frameWidth : frameHeight),
@@ -186,10 +186,8 @@ public class MultiBoxTracker {
                     false);
 
     final RectF trackedPos = new RectF(0,0,640,480);
-
     getFrameToCanvasMatrix().mapRect(trackedPos);
     boxPaint.setColor(Color.RED);
-
     //float cornerSize = Math.min(trackedPos.width(), trackedPos.height()) / 8.0f;
     float cornerSize = 50;
     canvas.drawRoundRect(trackedPos, cornerSize, cornerSize, boxPaint);
@@ -197,12 +195,12 @@ public class MultiBoxTracker {
     Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
     paint.setStyle(Paint.Style.STROKE);
     paint.setColor(Color.GREEN);
-    paint.setStrokeWidth(1);
+    paint.setStrokeWidth(3);
 
-    Paint paint_head = new Paint(Paint.ANTI_ALIAS_FLAG);
-    paint_head.setStyle(Paint.Style.STROKE);
-    paint_head.setColor(Color.RED);
-    paint_head.setStrokeWidth(1);
+    Paint paint_red = new Paint(Paint.ANTI_ALIAS_FLAG);
+    paint_red.setStyle(Paint.Style.STROKE);
+    paint_red.setColor(Color.RED);
+    paint_red.setStrokeWidth(3);
 
 //    Rect rec2 = new Rect(10, 10, 1004, 2004);
 //    canvas.drawRect(rec2,paint);
@@ -221,6 +219,22 @@ public class MultiBoxTracker {
       counter ++;
       Log.v("POSE","Counter = " + counter +  " x: " + x + " y: " + y);
     }
+
+    float [] gridPoints = new float[2];
+    int output_stride = 32;
+    counter = 0;
+    for (int i = 0; i < 23; i++){ // y-dims
+      for (int j = 0; j < 17; j ++){ // x-dims
+        gridPoints[0] = j * output_stride;
+        gridPoints[1] = i * output_stride;
+//        canvas.drawCircle(gridPoints[1], gridPoints[0],3.0f,paint_red);
+        getFrameToCanvasMatrix().mapPoints(gridPoints);
+        canvas.drawCircle(gridPoints[1], gridPoints[0],4.0f,paint);
+      }
+    }
+
+
+
 
     getFrameToCanvasMatrix().mapPoints(mPoints);
 

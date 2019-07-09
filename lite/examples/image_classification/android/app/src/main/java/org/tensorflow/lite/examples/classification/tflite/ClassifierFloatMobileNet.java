@@ -16,11 +16,15 @@ limitations under the License.
 package org.tensorflow.lite.examples.classification.tflite;
 
 import android.app.Activity;
+import android.graphics.PointF;
 import android.graphics.RectF;
 import android.util.Log;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
+
 
 /** This TensorFlowLite classifier works with the float MobileNet model. */
 public class ClassifierFloatMobileNet extends Classifier {
@@ -33,12 +37,23 @@ public class ClassifierFloatMobileNet extends Classifier {
    * An array to hold inference results, to be feed into Tensorflow Lite as outputs. This isn't part
    * of the super class, because we need a primitive array here.
    */
-  private float[][][][] labelProbArray = null;
+
   private float[] poses_x = null;
   private float[] poses_y = null;
   private float[] tmp_max = null;
   private int num_classes = 17;
-  private int output_stride = 16;
+  private int output_stride = 32;
+  private int x_max = 16;
+
+
+  private float[][][][] labelProbArray = new float[1] [23] [17] [17];
+//  private float[][][][] out1 = new float[1][23][17][17];
+  private float[][][][] short_offsets = new float[1][23][17][34];
+  private float[][][][] mid_offsets = new float[1][23][17][64];
+  private float[][][][] segments = new float[1][23][17][1];
+  private Map<Integer, Object> outputs = new HashMap<Integer, Object>();
+  private Object[] inputs = null;
+
 
 
   /**
@@ -50,10 +65,6 @@ public class ClassifierFloatMobileNet extends Classifier {
       throws IOException {
     super(activity, device, numThreads);
 
-
-    //  labelProbArray = new float[1][getNumLabels()];
-    labelProbArray = new float[1] [23] [17] [17];
-
     poses_x = new float[num_classes];
     poses_y = new float[num_classes];
     tmp_max = new float[num_classes];
@@ -62,17 +73,18 @@ public class ClassifierFloatMobileNet extends Classifier {
       poses_y[0] = (float) 0.0;
       tmp_max[0] = (float) 0.0;
     }
+
   }
 
   @Override
   public int getImageSizeX() {
-    //return 224;
+//    return 224;
     return 257;
   }
 
   @Override
   public int getImageSizeY() {
-    //return 224;
+//    return 224;
     return 353;
   }
 
@@ -126,7 +138,16 @@ public class ClassifierFloatMobileNet extends Classifier {
   protected ArrayList<Recognition> runInference() {
     // MG: This is where the model output should be catched
     Log.v("MG", "Starting to run inference");
-    tflite.run(imgData, labelProbArray);
+    // tflite.run(imgData, labelProbArray);
+
+    inputs = new Object[]{imgData};
+
+    outputs.put(0, labelProbArray);
+    outputs.put(1, short_offsets);
+    outputs.put(2, mid_offsets);
+    outputs.put(3, segments);
+
+    tflite.runForMultipleInputsOutputs(inputs,outputs);
 
     getPoses(labelProbArray, poses_x, poses_y);
 
@@ -135,7 +156,7 @@ public class ClassifierFloatMobileNet extends Classifier {
     RectF pose_location = null;
     Float confidence = new Float(0.9);
     for (int k = 0; k < 17; ++k) {
-      pose_location = new RectF(poses_x[k], poses_y[k],poses_x[k]+200,poses_x[k]+200);
+      pose_location = new RectF(poses_y[k], poses_x[k],poses_y[k], poses_x[k]);
       recognitions.add(new Recognition("Nose", "NoseTitle", confidence,pose_location ));
     }
     return recognitions;
@@ -151,15 +172,19 @@ public class ClassifierFloatMobileNet extends Classifier {
 
 
     for(int k = 0; k < 17; k++){ // loop over classes
-      for(int i = 0; i < 23; i++){ // loop over x-dims
-        for(int j = 0; j < 17; j++){ // loop over y-dims
+      for(int i = 0; i < 23; i++){ // loop over y-dims
+        for(int j = 0; j < 17; j++){ // loop over x-dims
 
           if (labelProbArray[0][i][j][k] > tmp_max[k]){
-            Log.v("POSE", "old max[k] = " + tmp_max[k] + ",\t new max = " + labelProbArray[0][i][j][k] + ", at (k,i,j) = (" + k + "," + i + "," + j + ")" + " pose(x,y) = " + (int) poses_x[k] + "," + (int) poses_y[k]);
+            //Log.v("POSE", "old max[k] = " + tmp_max[k] + ",\t new max = " + labelProbArray[0][i][j][k] + ", at (k,i,j) = (" + k + "," + i + "," + j + ")" + " pose(x,y) = " + (int) poses_x[k] + "," + (int) poses_y[k]);
             tmp_max[k] = labelProbArray[0][i][j][k];
-            poses_x[k] = i * output_stride;
-            poses_y[k] = j * output_stride;
-            Log.v("POSE", " pose(x,y) = " + (int) poses_x[k] + "," + (int) poses_y[k]);
+            poses_y[k] = (i - 1) * output_stride + short_offsets[0][i][j][k];
+            // poses_x[k] = (x_max - (j + 1)) * output_stride - short_offsets[0][i][j][k + 17];
+            poses_x[k] = (x_max - (j)) * output_stride - short_offsets[0][i][j][k + 17]; // TODO: not sure whether to add or subtract offset here
+
+//            poses_y[k] = i * output_stride;
+//            poses_x[k] = (x_max - j) * output_stride;
+            Log.v("POSE", " pose(x,y) = " + (int) poses_x[k] + "," + (int) poses_y[k] + " offset_x,y: " + short_offsets[0][i][j][k+17] + ", " + short_offsets[0][i][j][k]);
           }
 
         }
