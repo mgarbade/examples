@@ -42,8 +42,10 @@ public class ClassifierFloatMobileNet extends Classifier {
   private float[] poses_y = null;
   private float[] tmp_max = null;
   private int num_classes = 17;
-  private int output_stride = 32;
-  private int x_max = 16;
+  private float output_stride = 32;
+  private float x_max = (float) num_classes * output_stride;
+  private float short_offset_x = 0.0f;
+  private float short_offset_y = 0.0f;
 
 
   private float[][][][] labelProbArray = new float[1] [23] [17] [17];
@@ -176,14 +178,14 @@ public class ClassifierFloatMobileNet extends Classifier {
         for(int j = 0; j < 17; j++){ // loop over x-dims
 
           if (labelProbArray[0][i][j][k] > tmp_max[k]){
-            //Log.v("POSE", "old max[k] = " + tmp_max[k] + ",\t new max = " + labelProbArray[0][i][j][k] + ", at (k,i,j) = (" + k + "," + i + "," + j + ")" + " pose(x,y) = " + (int) poses_x[k] + "," + (int) poses_y[k]);
             tmp_max[k] = labelProbArray[0][i][j][k];
-            poses_y[k] = (i - 1) * output_stride + short_offsets[0][i][j][k];
-            // poses_x[k] = (x_max - (j + 1)) * output_stride - short_offsets[0][i][j][k + 17];
-            poses_x[k] = (x_max - (j)) * output_stride - short_offsets[0][i][j][k + 17]; // TODO: not sure whether to add or subtract offset here
+            short_offset_y = short_offsets[0][i][j][k];
+            short_offset_x = short_offsets[0][i][j][k + 17];
 
-//            poses_y[k] = i * output_stride;
-//            poses_x[k] = (x_max - j) * output_stride;
+            poses_y[k] = (float)(i) * output_stride + short_offset_y - output_stride / 2.0f;
+            poses_x[k] = x_max - ( (float)(j + 1) * output_stride + short_offset_x + output_stride / 2.0f ); // TODO: not sure whether to add or subtract offset here
+            // poses_x[k] = (x_max - (j + 1)) * output_stride - short_offsets[0][i][j][k + 17];
+
             Log.v("POSE", " pose(x,y) = " + (int) poses_x[k] + "," + (int) poses_y[k] + " offset_x,y: " + short_offsets[0][i][j][k+17] + ", " + short_offsets[0][i][j][k]);
           }
 
