@@ -84,9 +84,9 @@ public class ClassifierActivity extends CameraActivity implements OnImageAvailab
     previewHeight = size.getHeight();
 
     sensorOrientation = rotation - getScreenOrientation();
-    LOGGER.i("Camera orientation relative to screen canvas: %d", sensorOrientation);
+    Log.v("INIT","Camera orientation relative to screen canvas: " +  sensorOrientation);
 
-    LOGGER.i("Initializing at size %dx%d", previewWidth, previewHeight);
+    Log.v("INIT", "Initializing at size " + previewWidth +  " x " + previewHeight);
     rgbFrameBitmap = Bitmap.createBitmap(previewWidth, previewHeight, Config.ARGB_8888);
     croppedBitmap =
         Bitmap.createBitmap(

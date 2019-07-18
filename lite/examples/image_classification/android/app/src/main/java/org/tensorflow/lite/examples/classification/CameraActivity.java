@@ -140,7 +140,7 @@ public abstract class CameraActivity extends AppCompatActivity
 
   @Override
   public void surfaceChanged(SurfaceHolder holder, int format, int width, int height) {
-    Draw();
+    Draw(); // MG: Can be removed (-> only used during debugging), SurfaceHolder probably too.
     Log.v("MG","Drawing has been called.");
   }
 
@@ -224,12 +224,12 @@ public abstract class CameraActivity extends AppCompatActivity
           public void onSlide(@NonNull View bottomSheet, float slideOffset) {}
         });
 
-    recognitionTextView = findViewById(R.id.detected_item);
-    recognitionValueTextView = findViewById(R.id.detected_item_value);
-    recognition1TextView = findViewById(R.id.detected_item1);
-    recognition1ValueTextView = findViewById(R.id.detected_item1_value);
-    recognition2TextView = findViewById(R.id.detected_item2);
-    recognition2ValueTextView = findViewById(R.id.detected_item2_value);
+//    recognitionTextView = findViewById(R.id.detected_item);
+//    recognitionValueTextView = findViewById(R.id.detected_item_value);
+//    recognition1TextView = findViewById(R.id.detected_item1);
+//    recognition1ValueTextView = findViewById(R.id.detected_item1_value);
+//    recognition2TextView = findViewById(R.id.detected_item2);
+//    recognition2ValueTextView = findViewById(R.id.detected_item2_value);
 
     frameValueTextView = findViewById(R.id.frame_info);
     cropValueTextView = findViewById(R.id.crop_info);
@@ -257,18 +257,18 @@ public abstract class CameraActivity extends AppCompatActivity
   }
 
   private void Draw() {
-    Canvas canvas = holderTransparent.lockCanvas(null);
-    Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
-    paint.setStyle(Paint.Style.STROKE);
-    paint.setColor(Color.GREEN);
-    paint.setStrokeWidth(3);
-    RectLeft = 1;
-    RectTop = 200 ;
-    RectRight = RectLeft + deviceWidth -100;
-    RectBottom = RectTop+ 200;
-    Rect rec=new Rect((int) RectLeft,(int)RectTop,(int)RectRight,(int)RectBottom);
-    canvas.drawRect(rec,paint);
-    holderTransparent.unlockCanvasAndPost(canvas);
+//    Canvas canvas = holderTransparent.lockCanvas(null);
+//    Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
+//    paint.setStyle(Paint.Style.STROKE);
+//    paint.setColor(Color.GREEN);
+//    paint.setStrokeWidth(3);
+//    RectLeft = 1;
+//    RectTop = 200 ;
+//    RectRight = RectLeft + deviceWidth -100;
+//    RectBottom = RectTop+ 200;
+//    Rect rec=new Rect((int) RectLeft,(int)RectTop,(int)RectRight,(int)RectBottom);
+//    canvas.drawRect(rec,paint);
+//    holderTransparent.unlockCanvasAndPost(canvas);
   }
 
 
@@ -342,7 +342,7 @@ public abstract class CameraActivity extends AppCompatActivity
     }
     try {
       final Image image = reader.acquireLatestImage();
-
+      //Log.v("INIT", "image.getWidth: " + image.getWidth() + " image.getHeight: " + image.getHeight());
       if (image == null) {
         return;
       }
@@ -498,7 +498,10 @@ public abstract class CameraActivity extends AppCompatActivity
 
         // We don't use a front facing camera in this sample.
         final Integer facing = characteristics.get(CameraCharacteristics.LENS_FACING);
-        if (facing != null && facing == CameraCharacteristics.LENS_FACING_FRONT) {
+//        if (facing != null && facing == CameraCharacteristics.LENS_FACING_FRONT) {
+//          continue;
+//        }
+        if (facing != null && facing == CameraCharacteristics.LENS_FACING_BACK) { // MG: Only use front camera
           continue;
         }
 
@@ -625,7 +628,7 @@ public abstract class CameraActivity extends AppCompatActivity
   }
 
   protected void showCameraResolution(String cameraInfo) {
-    cameraResolutionTextView.setText(previewWidth + "x" + previewHeight);
+      cameraResolutionTextView.setText(previewWidth + "x" + previewHeight);
   }
 
   protected void showRotationInfo(String rotation) {

@@ -33,6 +33,7 @@ public class ClassifierFloatMobileNet extends Classifier {
   private static final float IMAGE_MEAN = 127.5f;
   private static final float IMAGE_STD = 127.5f;
 
+
   /**
    * An array to hold inference results, to be feed into Tensorflow Lite as outputs. This isn't part
    * of the super class, because we need a primitive array here.
@@ -40,10 +41,11 @@ public class ClassifierFloatMobileNet extends Classifier {
 
   private float[] poses_x = null;
   private float[] poses_y = null;
-  private float[] tmp_max = null;
+  private float[] confidence_max = null;
   private int num_classes = 17;
-  private float output_stride = 32;
-  private float x_max = (float) num_classes * output_stride;
+  private float output_stride = 16.0f;
+  private float x_max = 257.0f;
+  private float y_max = 353.0f;
   private float short_offset_x = 0.0f;
   private float short_offset_y = 0.0f;
 
@@ -69,11 +71,11 @@ public class ClassifierFloatMobileNet extends Classifier {
 
     poses_x = new float[num_classes];
     poses_y = new float[num_classes];
-    tmp_max = new float[num_classes];
+    confidence_max = new float[num_classes];
     for(int i = 0; i < num_classes; i++){
       poses_x[0] = (float) 0.0;
       poses_y[0] = (float) 0.0;
-      tmp_max[0] = (float) 0.0;
+      confidence_max[0] = (float) 0.0;
     }
 
   }
@@ -111,7 +113,7 @@ public class ClassifierFloatMobileNet extends Classifier {
 
   @Override
   protected void addPixelValue(int pixelValue) {
-    imgData.putFloat((((pixelValue >> 16) & 0xFF) - IMAGE_MEAN) / IMAGE_STD);
+    imgData.putFloat((((pixelValue >> 16) & 0xFF) - IMAGE_MEAN) / IMAGE_STD); // TODO MG: Check if this is the correct preprocessing for mobilenet_v1_pose
     imgData.putFloat((((pixelValue >> 8) & 0xFF) - IMAGE_MEAN) / IMAGE_STD);
     imgData.putFloat(((pixelValue & 0xFF) - IMAGE_MEAN) / IMAGE_STD);
   }
@@ -156,10 +158,10 @@ public class ClassifierFloatMobileNet extends Classifier {
     // Fill results in ArrayList:
     ArrayList<Recognition> recognitions = new ArrayList<Recognition>();
     RectF pose_location = null;
-    Float confidence = new Float(0.9);
+    // Float confidence = new Float(0.9);
     for (int k = 0; k < 17; ++k) {
       pose_location = new RectF(poses_y[k], poses_x[k],poses_y[k], poses_x[k]);
-      recognitions.add(new Recognition("Nose", "NoseTitle", confidence,pose_location ));
+      recognitions.add(new Recognition("Nose", "NoseTitle", confidence_max[k] ,pose_location ));
     }
     return recognitions;
   }
@@ -167,7 +169,7 @@ public class ClassifierFloatMobileNet extends Classifier {
 
   void getPoses(float[][][][] labelProbArray, float[] poses_x, float[] poses_y){
     for(int k = 0; k < 17; k++){
-      tmp_max[k] = labelProbArray[0][0][0][k];
+      confidence_max[k] = labelProbArray[0][0][0][k];
       poses_x[k] = 0;
       poses_y[k] = 0;
     }
@@ -177,13 +179,13 @@ public class ClassifierFloatMobileNet extends Classifier {
       for(int i = 0; i < 23; i++){ // loop over y-dims
         for(int j = 0; j < 17; j++){ // loop over x-dims
 
-          if (labelProbArray[0][i][j][k] > tmp_max[k]){
-            tmp_max[k] = labelProbArray[0][i][j][k];
+          if (labelProbArray[0][i][j][k] > confidence_max[k]){
+            confidence_max[k] = labelProbArray[0][i][j][k];
             short_offset_y = short_offsets[0][i][j][k];
             short_offset_x = short_offsets[0][i][j][k + 17];
 
-            poses_y[k] = (float)(i) * output_stride + short_offset_y - output_stride / 2.0f;
-            poses_x[k] = x_max - ( (float)(j + 1) * output_stride + short_offset_x + output_stride / 2.0f ); // TODO: not sure whether to add or subtract offset here
+            poses_y[k] = y_max - ( (float)i * output_stride + short_offset_y + output_stride / 2.0f );
+            poses_x[k] = x_max - ( (float)j * output_stride + short_offset_x + output_stride / 2.0f ); // TODO: not sure whether to add or subtract offset here
             // poses_x[k] = (x_max - (j + 1)) * output_stride - short_offsets[0][i][j][k + 17];
 
             Log.v("POSE", " pose(x,y) = " + (int) poses_x[k] + "," + (int) poses_y[k] + " offset_x,y: " + short_offsets[0][i][j][k+17] + ", " + short_offsets[0][i][j][k]);

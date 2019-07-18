@@ -236,9 +236,13 @@ public abstract class Classifier {
       return;
     }
     imgData.rewind();
+    int mBitmapWidth = bitmap.getWidth();
+    int mBitmapHeight = bitmap.getHeight();
     bitmap.getPixels(intValues, 0, bitmap.getWidth(), 0, 0, bitmap.getWidth(), bitmap.getHeight());
     // Convert the image to floating point.
     int pixel = 0;
+    int mImageSizeY = getImageSizeY();
+    int mImageSizeX = getImageSizeX();
     long startTime = SystemClock.uptimeMillis();
     for (int i = 0; i < getImageSizeX(); ++i) {
       for (int j = 0; j < getImageSizeY(); ++j) {

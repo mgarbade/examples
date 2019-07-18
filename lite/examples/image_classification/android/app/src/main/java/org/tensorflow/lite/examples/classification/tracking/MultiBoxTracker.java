@@ -75,6 +75,29 @@ public class MultiBoxTracker {
   private int sensorOrientation;
   private List<Recognition> poses = null;
 
+  private float minPoseConf = 0.1f;
+  private float minPartConf = 0.5f;
+
+
+  private Keypoint nose = new Keypoint();
+  private Keypoint leftEye = new Keypoint();
+  private Keypoint rightEye = new Keypoint();
+  private Keypoint leftEar = new Keypoint();
+  private Keypoint rightEar = new Keypoint();
+  private Joint shoulder_left = new Joint();
+  private Joint shoulder_right = new Joint();
+  private Joint elbow_left = new Joint();
+  private Joint elbow_right  = new Joint();
+  private Joint wrist_left = new Joint();
+  private Joint wrist_right = new Joint();
+  private Joint hip_left = new Joint();
+  private Joint hip_right = new Joint();
+  private Joint knee_left = new Joint();
+  private Joint knee_right = new Joint();
+  private Joint ankle_left = new Joint();
+  private Joint ankle_right = new Joint();
+
+
   public MultiBoxTracker(final Context context) {
     for (final int color : COLORS) {
       availableColors.add(color);
@@ -127,40 +150,40 @@ public class MultiBoxTracker {
     return frameToCanvasMatrix;
   }
 
-  public synchronized void draw(final Canvas canvas) {
-    final boolean rotated = sensorOrientation % 180 == 90;
-//    final boolean rotated = false;
-    final float multiplier =
-        Math.min(
-            canvas.getHeight() / (float) (rotated ? frameWidth : frameHeight),
-            canvas.getWidth() / (float) (rotated ? frameHeight : frameWidth));
-    frameToCanvasMatrix =
-        ImageUtils.getTransformationMatrix(
-            frameWidth,
-            frameHeight,
-            (int) (multiplier * (rotated ? frameHeight : frameWidth)),
-            (int) (multiplier * (rotated ? frameWidth : frameHeight)),
-            sensorOrientation,
-            false);
-    for (final TrackedRecognition recognition : trackedObjects) {
-      final RectF trackedPos = new RectF(recognition.location);
-
-      getFrameToCanvasMatrix().mapRect(trackedPos);
-      boxPaint.setColor(recognition.color);
-
-      float cornerSize = Math.min(trackedPos.width(), trackedPos.height()) / 8.0f;
-      canvas.drawRoundRect(trackedPos, cornerSize, cornerSize, boxPaint);
-
-//      final String labelString =
-//          !TextUtils.isEmpty(recognition.title)
-//              ? String.format("%s %.2f", recognition.title, (100 * recognition.detectionConfidence))
-//              : String.format("%.2f", (100 * recognition.detectionConfidence));
-//      //            borderedText.drawText(canvas, trackedPos.left + cornerSize, trackedPos.top,
-//      // labelString);
-//      borderedText.drawText(
-//          canvas, trackedPos.left + cornerSize, trackedPos.top, labelString + "%", boxPaint);
-    }
-  }
+//  public synchronized void draw(final Canvas canvas) {
+//    final boolean rotated = sensorOrientation % 180 == 90;
+////    final boolean rotated = false;
+//    final float multiplier =
+//        Math.min(
+//            canvas.getHeight() / (float) (rotated ? frameWidth : frameHeight),
+//            canvas.getWidth() / (float) (rotated ? frameHeight : frameWidth));
+//    frameToCanvasMatrix =
+//        ImageUtils.getTransformationMatrix(
+//            frameWidth,
+//            frameHeight,
+//            (int) (multiplier * (rotated ? frameHeight : frameWidth)),
+//            (int) (multiplier * (rotated ? frameWidth : frameHeight)),
+//            sensorOrientation,
+//            false);
+//    for (final TrackedRecognition recognition : trackedObjects) {
+//      final RectF trackedPos = new RectF(recognition.location);
+//
+//      getFrameToCanvasMatrix().mapRect(trackedPos);
+//      boxPaint.setColor(recognition.color);
+//
+//      float cornerSize = Math.min(trackedPos.width(), trackedPos.height()) / 8.0f;
+//      canvas.drawRoundRect(trackedPos, cornerSize, cornerSize, boxPaint);
+//
+////      final String labelString =
+////          !TextUtils.isEmpty(recognition.title)
+////              ? String.format("%s %.2f", recognition.title, (100 * recognition.detectionConfidence))
+////              : String.format("%.2f", (100 * recognition.detectionConfidence));
+////      //            borderedText.drawText(canvas, trackedPos.left + cornerSize, trackedPos.top,
+////      // labelString);
+////      borderedText.drawText(
+////          canvas, trackedPos.left + cornerSize, trackedPos.top, labelString + "%", boxPaint);
+//    }
+//  }
 
   public synchronized void setPoses(List<Recognition> resultPoses){
     poses = resultPoses;
@@ -195,7 +218,7 @@ public class MultiBoxTracker {
     Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
     paint.setStyle(Paint.Style.STROKE);
     paint.setColor(Color.GREEN);
-    paint.setStrokeWidth(3);
+    paint.setStrokeWidth(10);
 
     Paint paint_red = new Paint(Paint.ANTI_ALIAS_FLAG);
     paint_red.setStyle(Paint.Style.STROKE);
@@ -206,97 +229,155 @@ public class MultiBoxTracker {
 //    canvas.drawRect(rec2,paint);
 
     float radius = 10;
-    float scale = (float) 1.0;
+    float scale = 2.0f;
     float [] mPoints = new float[34];
-    float x = 0, y = 0;
+    float [] confidences = new float[17];
+    float x = 0.0f, y = 0.0f;
     paint.setStyle(Paint.Style.FILL);
     int counter = 0;
     for (Recognition pose : poses){
-      y = pose.getLocation().top * scale;
-      x = pose.getLocation().left * scale;
+      y = pose.getLocation().top * scale; // MG: "top" ironically means x-dim
+      x = pose.getLocation().left * scale; // MG: "left" ironically means y-dim
+      confidences[counter] = pose.getConfidence();
       mPoints[counter * 2] = x;
       mPoints[counter * 2 + 1] = y;
       counter ++;
-      Log.v("POSE","Counter = " + counter +  " x: " + x + " y: " + y);
+      // Log.v("POSE","Counter = " + counter +  " x: " + x + " y: " + y);
     }
 
+
+    // Draw network output resolution grid
     float [] gridPoints = new float[2];
-    int output_stride = 32;
-    counter = 0;
-    for (int i = 0; i < 23; i++){ // y-dims
-      for (int j = 0; j < 17; j ++){ // x-dims
-        gridPoints[0] = j * output_stride;
-        gridPoints[1] = i * output_stride;
-//        canvas.drawCircle(gridPoints[1], gridPoints[0],3.0f,paint_red);
-        getFrameToCanvasMatrix().mapPoints(gridPoints);
-        canvas.drawCircle(gridPoints[1], gridPoints[0],4.0f,paint);
-      }
-    }
+    float output_stride = 16.0f;
+    float x_max =  257;
+    float y_max =  353;
+
+//    counter = 0;
+//    for (int i = 0; i < 17; i++){
+//      for (int j = 0; j < 23; j ++){
+//        //gridPoints[0] = j * output_stride + output_stride / 2.0f; // x-val
+//        //gridPoints[1] = i * output_stride + output_stride / 2.0f; // y-val
+//
+//        gridPoints[0] = y_max - ( (float)j * output_stride + output_stride / 2.0f );
+//        gridPoints[1] = x_max - ( (float)i * output_stride + output_stride / 2.0f );
+//
+//
+//        canvas.drawCircle(gridPoints[1], gridPoints[0],4.0f,paint_red);
+//        getFrameToCanvasMatrix().mapPoints(gridPoints);
+//        canvas.drawCircle(gridPoints[1], gridPoints[0],4.0f,paint);
+//      }
+//    }
 
 
 
 
     getFrameToCanvasMatrix().mapPoints(mPoints);
 
-    float shoulder_left_x = mPoints[5 * 2];
-    float shoulder_left_y = mPoints[5 * 2 + 1];
-    float shoulder_right_x = mPoints[6 * 2];
-    float shoulder_right_y = mPoints[6 * 2 + 1];
+    nose.confidence = confidences[0];
+    nose.location.x = mPoints[0 * 2];
+    nose.location.y = mPoints[0 * 2 + 1];
+    leftEye.confidence = confidences[1];
+    leftEye.location.x = mPoints[1 * 2];
+    leftEye.location.y = mPoints[1 * 2 + 1];
+    rightEye.confidence = confidences[2];
+    rightEye.location.x = mPoints[2 * 2];
+    rightEye.location.y = mPoints[2 * 2 + 1];
+    leftEar.confidence = confidences[3];
+    leftEar.location.x = mPoints[3 * 2];
+    leftEar.location.y = mPoints[3 * 2 + 1];
+    rightEar.confidence = confidences[4];
+    rightEar.location.x = mPoints[4 * 2];
+    rightEar.location.y = mPoints[4 * 2 + 1];
 
-    float elbow_left_x = mPoints[7 * 2];
-    float elbow_left_y = mPoints[7 * 2 + 1];
-    float elbow_right_x = mPoints[8 * 2];
-    float elbow_right_y = mPoints[8 * 2 + 1];
+    shoulder_left.confidence = confidences[5];
+    shoulder_left.location.x = mPoints[5 * 2];
+    shoulder_left.location.y = mPoints[5 * 2 + 1];
+    shoulder_right.confidence = confidences[6];
+    shoulder_right.location.x = mPoints[6 * 2];
+    shoulder_right.location.y = mPoints[6 * 2 + 1];
 
-    float wrist_left_x = mPoints[9 * 2];
-    float wrist_left_y = mPoints[9 * 2 + 1];
-    float wrist_right_x = mPoints[10 * 2];
-    float wrist_right_y = mPoints[10 * 2 + 1];
+    elbow_left.confidence = confidences[7];
+    elbow_left.location.x = mPoints[7 * 2];
+    elbow_left.location.y = mPoints[7 * 2 + 1];
+    elbow_right.confidence = confidences[8];
+    elbow_right.location.x = mPoints[8 * 2];
+    elbow_right.location.y = mPoints[8 * 2 + 1];
 
-    float hip_left_x = mPoints[11 * 2];
-    float hip_left_y = mPoints[11 * 2 + 1];
-    float hip_right_x = mPoints[12 * 2];
-    float hip_right_y = mPoints[12 * 2 + 1];
+    wrist_left.confidence = confidences[9];
+    wrist_left.location.x = mPoints[9 * 2];
+    wrist_left.location.y = mPoints[9 * 2 + 1];
+    wrist_right.confidence = confidences[10];
+    wrist_right.location.x = mPoints[10 * 2];
+    wrist_right.location.y = mPoints[10 * 2 + 1];
 
-    float knee_left_x = mPoints[13 * 2];
-    float knee_left_y = mPoints[13 * 2 + 1];
-    float knee_right_x = mPoints[14 * 2];
-    float knee_right_y = mPoints[14 * 2 + 1];
+    hip_left.confidence = confidences[11];
+    hip_left.location.x = mPoints[11 * 2];
+    hip_left.location.y = mPoints[11 * 2 + 1];
+    hip_right.confidence = confidences[12];
+    hip_right.location.x = mPoints[12 * 2];
+    hip_right.location.y = mPoints[12 * 2 + 1];
 
-    float ankle_left_x = mPoints[15 * 2];
-    float ankle_left_y = mPoints[15 * 2 + 1];
-    float ankle_right_x = mPoints[16 * 2];
-    float ankle_right_y = mPoints[16 * 2 + 1];
+    knee_left.confidence = confidences[13];
+    knee_left.location.x = mPoints[13 * 2];
+    knee_left.location.y = mPoints[13 * 2 + 1];
+    knee_right.confidence = confidences[14];
+    knee_right.location.x = mPoints[14 * 2];
+    knee_right.location.y = mPoints[14 * 2 + 1];
+
+    ankle_left.confidence = confidences[15];
+    ankle_left.location.x = mPoints[15 * 2];
+    ankle_left.location.y = mPoints[15 * 2 + 1];
+    ankle_right.confidence = confidences[16];
+    ankle_right.location.x = mPoints[16 * 2];
+    ankle_right.location.y = mPoints[16 * 2 + 1];
 
 
 
-
+    // Face
+    draw_keypoint(nose, paint, canvas);
+    draw_keypoint(leftEye, paint, canvas);
+    draw_keypoint(rightEye, paint, canvas);
+    draw_keypoint(leftEar, paint, canvas);
+    draw_keypoint(rightEar, paint, canvas);
 
 
     // Arms
     paint.setColor(Color.MAGENTA);
-    canvas.drawLine(shoulder_left_x,shoulder_left_y,elbow_left_x,elbow_left_y,paint);
-    canvas.drawLine(elbow_left_x,elbow_left_y,wrist_left_x,wrist_left_y,paint);
+    draw_joint(shoulder_left, elbow_left, paint, canvas);
+    draw_joint(elbow_left, wrist_left, paint, canvas);
+
     paint.setColor(Color.CYAN);
-    canvas.drawLine(shoulder_right_x,shoulder_right_y,elbow_right_x,elbow_right_y,paint);
-    canvas.drawLine(elbow_right_x,elbow_right_y,wrist_right_x,wrist_right_y,paint);
+    draw_joint(shoulder_right, elbow_right, paint, canvas);
+    draw_joint(elbow_right, wrist_right, paint, canvas);
 
     // Legs
     paint.setColor(Color.BLUE);
-    canvas.drawLine(hip_left_x,hip_left_y,knee_left_x,knee_left_y,paint);
-    canvas.drawLine(knee_left_x,knee_left_y,ankle_left_x,ankle_left_y,paint);
+    draw_joint(hip_left, knee_left, paint, canvas);
+    draw_joint(knee_left, ankle_left, paint, canvas);
+
     paint.setColor(Color.GREEN);
-    canvas.drawLine(hip_right_x,hip_right_y,knee_right_x,knee_right_y,paint);
-    canvas.drawLine(knee_right_x,knee_right_y,ankle_right_x,ankle_right_y,paint);
+    draw_joint(hip_right, knee_right, paint, canvas);
+    draw_joint(knee_right, ankle_right, paint, canvas);
 
     // Body
     paint.setColor(Color.YELLOW);
-    canvas.drawLine(shoulder_left_x,shoulder_left_y,shoulder_right_x,shoulder_right_y,paint);
-    canvas.drawLine(shoulder_left_x,shoulder_left_y,hip_left_x,hip_left_y,paint);
-    canvas.drawLine(shoulder_right_x,shoulder_right_y,hip_right_x,hip_right_y,paint);
-    canvas.drawLine(hip_left_x,hip_left_y,hip_right_x,hip_right_y,paint);
+    draw_joint(shoulder_left, shoulder_right, paint, canvas);
+    draw_joint(shoulder_left, hip_left, paint, canvas);
+    draw_joint(shoulder_right, hip_right, paint, canvas);
+    draw_joint(hip_left, hip_right, paint, canvas);
 
+  }
 
+  private void draw_joint(Joint joint_a, Joint joint_b, Paint paint, Canvas canvas){
+      if(joint_a.confidence > minPartConf && joint_b.confidence > minPartConf){
+          canvas.drawLine(joint_a.location.x,joint_a.location.y,joint_b.location.x,joint_b.location.y,paint);
+      }
+  }
+
+  private void draw_keypoint(Keypoint keypoint, Paint paint, Canvas canvas){
+    if(keypoint.confidence > minPoseConf){
+      canvas.drawCircle(keypoint.location.x, keypoint.location.y,10.0f,paint);
+    }
   }
 
   private void processResults(final List<Recognition> results) {
@@ -354,4 +435,27 @@ public class MultiBoxTracker {
     int color;
     String title;
   }
+
+  private class Joint {
+    PointF location;
+    float confidence;
+    int color;
+    String title;
+
+    Joint(){
+      location = new PointF();
+    }
+  }
+
+  private class Keypoint {
+    PointF location;
+    float confidence;
+    int color;
+    String title;
+
+    Keypoint(){
+      location = new PointF();
+    }
+  }
+
 }
